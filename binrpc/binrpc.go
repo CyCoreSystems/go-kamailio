@@ -93,7 +93,8 @@ func ConstructHeader(header *bytes.Buffer, payloadLength uint64, cookie uint32) 
 	if payloadLength%256 > 0 {
 		plSize += 1
 	}
-	log.Printf("Payload length is %d, and the length of that value in bytes is %d", payloadLength, plSize)
+
+	//log.Printf("Payload length is %d, and the length of that value in bytes is %d", payloadLength, plSize)
 
 	// Find the size of the cookie
 	cookieSize := binary.Size(cookie)
