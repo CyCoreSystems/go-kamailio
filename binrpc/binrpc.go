@@ -99,22 +99,25 @@ func ConstructHeader(header *bytes.Buffer, payloadLength uint64, cookie uint32) 
 	// Find the size of the cookie
 	cookieSize := binary.Size(cookie)
 	if cookieSize < 0 {
-		return fmt.Errorf("Failed to determine byte length of cookie")
+		return fmt.Errorf("failed to determine byte length of cookie")
 	}
 
 	// Write the Flags/LL/CL byte (flags hard-coded to 0x0 for now)
 	err = header.WriteByte(byte(0x0<<4 | uint(plSize-1)<<2 | uint(cookieSize-1)))
+	if err != nil {
+		return fmt.Errorf("failed to write flags byte: %w", err)
+	}
 
 	// Write the payload length
 	err = binary.Write(header, binary.BigEndian, uint8(payloadLength))
 	if err != nil {
-		return fmt.Errorf("Failed to append payload length: %s", err.Error())
+		return fmt.Errorf("failed to append payload length: %w", err)
 	}
 
 	// Write the cookie
 	err = binary.Write(header, binary.BigEndian, cookie)
 	if err != nil {
-		return fmt.Errorf("Failed to append cookie: %s", err.Error())
+		return fmt.Errorf("failed to append cookie: %w", err)
 	}
 
 	return nil
@@ -126,7 +129,7 @@ func ConstructPayload(payload *bytes.Buffer, valType uint, val interface{}) erro
 	// Calculate the minimum byte-size of the value
 	valueLength := int8(binary.Size(val))
 	if valueLength < 0 {
-		return fmt.Errorf("Failed to determine byte-size of value")
+		return fmt.Errorf("failed to determine byte-size of value")
 	}
 
 	// If the minimum byte-size is larger than will
@@ -138,8 +141,8 @@ func ConstructPayload(payload *bytes.Buffer, valType uint, val interface{}) erro
 		// If sflag = 1, size now describes the byte size
 		// of the _length_ of the value instead of the value itself
 		if temp_size := binary.Size(valueLength); temp_size < 0 {
-			log.Println("Binary size of", valueLength, "is", temp_size)
-			return fmt.Errorf("Failed to determine byte-size of value length")
+			log.Println("binary size of", valueLength, "is", temp_size)
+			return fmt.Errorf("failed to determine byte-size of value length")
 		} else {
 			size = uint(temp_size)
 		}
@@ -151,7 +154,7 @@ func ConstructPayload(payload *bytes.Buffer, valType uint, val interface{}) erro
 	// Write the payload header
 	err := payload.WriteByte(byte(sflag<<7 | size<<4 | valType))
 	if err != nil {
-		return fmt.Errorf("Failed to write payload header: %s", err.Error())
+		return fmt.Errorf("failed to write payload header: %w", err)
 	}
 
 	// Write the optional value length if our size is too large
@@ -159,14 +162,14 @@ func ConstructPayload(payload *bytes.Buffer, valType uint, val interface{}) erro
 	if sflag == 1 {
 		err = binary.Write(payload, binary.BigEndian, uint8(valueLength))
 		if err != nil {
-			return fmt.Errorf("Failed to append optional value length: %s", err.Error())
+			return fmt.Errorf("failed to append optional value length: %w", err)
 		}
 	}
 
 	// Append the value itself
 	err = binary.Write(payload, binary.BigEndian, val)
 	if err != nil {
-		return fmt.Errorf("Failed to append payload value: %s", err.Error())
+		return fmt.Errorf("failed to append payload value: %w", err)
 	}
 
 	return nil
@@ -179,7 +182,7 @@ func WritePacket(w io.Writer, valType uint, val interface{}) error {
 	payload := new(bytes.Buffer)
 	err := ConstructPayload(payload, valType, val)
 	if err != nil {
-		return fmt.Errorf("Failed to construct payload: %s", err.Error())
+		return fmt.Errorf("failed to construct payload: %w", err)
 	}
 
 	// Generate a cookie
@@ -188,13 +191,13 @@ func WritePacket(w io.Writer, valType uint, val interface{}) error {
 	// Add the header
 	err = ConstructHeader(buf, uint64(payload.Len()), cookie)
 	if err != nil {
-		return fmt.Errorf("Failed to construct header: %s", err.Error())
+		return fmt.Errorf("failed to construct header: %w", err)
 	}
 
 	// Add the payload
 	_, err = payload.WriteTo(buf)
 	if err != nil {
-		return fmt.Errorf("Failed to append payload: %s", err.Error())
+		return fmt.Errorf("failed to append payload: %w", err)
 	}
 
 	// Write the buffer to the io.Writer
