@@ -1,10 +1,9 @@
 package binrpc
 
 import (
+	"fmt"
 	"io"
 	"net"
-
-	"github.com/pkg/errors"
 )
 
 type binRPCClientCodec struct {
@@ -33,14 +32,14 @@ func InvokeMethod(method string, host string, port string) error {
 	defer conn.Close() // nolint
 
 	if err != nil {
-		return errors.Wrap(err, "failed to connect to kamailio RPC server")
+		return fmt.Errorf("failed to connect to kamailio RPC server: %w", err)
 	}
 
 	codec := newClientCodec(conn)
 	err = codec.WriteRequest(method)
 
 	if err != nil {
-		return errors.Wrap(err, "failed to invoke RPC method")
+		return fmt.Errorf("failed to invoke RPC method: %w", err)
 	}
 
 	return nil
